@@ -9,7 +9,8 @@ import { usermodel } from "../../model/usermodel.js";
 import * as dbservice from "../../DB/services/dbservice.js";
 import jwt from "jsonwebtoken"
 import { Sendotp } from "./sendotp.js";
-import { JWT_SECRET, REFRESH_TOKEN_SECRET } from "../../config/config.js";
+import { JWT_SECRET, REFRESH_TOKEN_SECRET, SALTROUND } from "../../config/config.js";
+import { Success_responce } from "../../common/middleware/utils/Success.response.js";
 
 
 
@@ -28,25 +29,35 @@ export const Signup=async(req,res,next)=>{
    await Sendotp({email,fullname})
    
     const data=await dbservice.create({
-model:usermodel,
-data:{
+        model:usermodel,
+    data:{
             fullname,
             email,
-            password: await Hash(password),
+            password: await Hash(password,Number(SALTROUND)),
             phone: phone ? Encrypt(phone) : undefined,
             image: req.files?.attachment ? req.files.attachment[0].path : undefined,
             cover: req.files?.cover ? req.files.cover[0].path : undefined,
 }
  })
- return res.status(201).json({message:"user created successfully",data})
 
+ Success_responce({
+    res,
+    statuscode:201,
+    message:"user created successfully",
+    data
+})
 }
 
 /*     Resend_otp     */
 export const Resend_otp=async(req,res,next)=>{
     const {email}=req.body
     await Sendotp({email,subject:"Resend_otp",isConfirmed: false})
-    return res.status(200).json("Resend_otp done ✔")
+
+    Success_responce({
+    res,
+    statuscode:200,
+    message:"Resend_otp done ✔",
+})
 
 }
 
@@ -76,7 +87,13 @@ export const Confirmed_Email = async (req, res, next) => {
         throw new Error("User not Exist || already confirmed XX");
     }
 
-return res.status(201).json({message:"Email Confirmed 🌹",user})
+
+    Success_responce({
+    res,
+    statuscode:201,
+    message:"Email Confirmed 🌹",
+    data:user
+})
 };
 
 /*     LOGIN     */
@@ -96,7 +113,12 @@ const tokenid=randomUUID()
 const access_token=jwt.sign({sub:user.id,email},JWT_SECRET,{expiresIn:60,jwtid:tokenid})
 const refresh_token=jwt.sign({sub:user.id,email},REFRESH_TOKEN_SECRET,{jwtid:tokenid})
 
-return res.status(200).json({message:"Done",token:{access_token,refresh_token}})
+
+ Success_responce({
+    res,
+    statuscode:201,
+    data:{access_token,refresh_token}
+})
 
 }
 
@@ -104,6 +126,11 @@ return res.status(200).json({message:"Done",token:{access_token,refresh_token}})
 export const profile=async(req,res,next)=>{
     const user =req.user
     return res.status(200).json({message:"Done",data:user})
+     Success_responce({
+    res,
+    statuscode:201,
+    data:user
+})
 }
 
 /*   Refresh_token  */
@@ -124,7 +151,12 @@ export const Refresh_token=async(req,res,next)=>{
         throw new Error("user not found");
         }
         const access_token=jwt.sign({sub:user.id},JWT_SECRET,{expiresIn:60})
-return res.status(200).json({message:"Done",token:{access_token}})
+
+ Success_responce({
+    res,
+    statuscode:201,
+    data:{access_token}
+})
 
 
 }
@@ -146,6 +178,11 @@ export const Logout_All=async(req,res,next)=>{
         })
     }
     return res.status(200).json("Logout done")
+        Success_responce({
+    res,
+    statuscode:201,
+    message:"Logout done",
+})
 
 
 }

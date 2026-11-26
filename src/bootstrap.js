@@ -1,21 +1,42 @@
 
-import { PORT } from "./config/config.js";
+import { ALLOW_ORIGIN, PORT } from "./config/config.js";
+import helmet from "helmet";
+import cors from "cors";
 import express from "express";
 import connectDB from "./DB/conectdb.js";
 import userRouter from "./module/User/usercontroller.js";
 import { connectredis } from "./DB/connectredis.js";
 import messagerouter from "./module/Message/messagecontroller.js";
+import rateLimit from "express-rate-limit";
 const app=express();
 const port=PORT;
-import cors from "cors";
-
+const limiter=rateLimit({
+    windowMs:60*1000,
+    limit:10,
+    message:{
+        success:false,
+        message:"you reached max request ✖"
+    }
+})
 
 
 export const bootstrap=async ()=>{
     app.use(express.json());
 
 
-app.use(cors());
+// app.use(cors({
+//     origin:function(origin,callback){
+//         if(ALLOW_ORIGIN.includes(origin)){
+//             callback(null,true)
+//         }else{
+//             callback(new Error("not allow by origin")
+//             )
+//         }
+//     }
+// }));
+app.use(helmet())
+app.use(limiter)
+ 
 app.use("/uploads",express.static("./uploads"))
     await connectDB();
     await connectredis()
